@@ -1,0 +1,179 @@
+# docker-compose.yml — Local development environment
+# Usage: docker compose up -d
+
+services:
+  # === API Server ===
+  api:
+    build: .
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DEBUG=true
+      - PGVECTOR_HOST=postgres
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app
+      - generated:/app/generated
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  # === Celery Query Worker ===
+  query-worker:
+    build: .
+    command: >
+      celery -A src.celery_app worker
+      --queues=rag.query
+      --concurrency=4
+      --pool=gevent
+      --loglevel=info
+      --hostname=query@%h
+    env_file: .env
+    environment:
+      - PGVECTOR_HOST=postgres
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # === Celery Doc-Gen Worker ===
+  docgen-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.docgen
+    command: >
+      celery -A src.celery_app worker
+      --queues=rag.doc_gen
+      --concurrency=2
+      --pool=prefork
+      --loglevel=info
+      --hostname=docgen@%h
+    env_file: .env
+    environment:
+      - PGVECTOR_HOST=postgres
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app
+      - generated:/app/generated
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # === Celery Ingestion Worker ===
+  ingestion-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.docgen
+    command: >
+      celery -A src.celery_app worker
+      --queues=rag.ingestion
+      --concurrency=4
+      --pool=prefork
+      --loglevel=info
+      --hostname=ingestion@%h
+    env_file: .env
+    environment:
+      - PGVECTOR_HOST=postgres
+      - NEO4J_URI=bolt://neo4j:7687
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  # === Celery Beat (Scheduler) ===
+  celery-beat:
+    build: .
+    command: celery -A src.celery_app beat --loglevel=info
+    env_file: .env
+    environment:
+      - PGVECTOR_HOST=postgres
+      - REDIS_HOST=redis
+    volumes:
+      - .:/app
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # === PostgreSQL + pgvector ===
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: betterrag
+      POSTGRES_USER: betterrag
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U betterrag -d betterrag"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # === Neo4j ===
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/changeme
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - neo4jdata:/data
+
+  # === Redis ===
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # === Open WebUI (Optional — for frontend testing) ===
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - "3000:8080"
+    environment:
+      OLLAMA_BASE_URL: ""
+      DEFAULT_MODELS: "better-rag-agent"
+      WEBUI_SECRET_KEY: "dev-secret-key-change-in-production"
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      - api
+    profiles:
+      - frontend
+
+volumes:
+  pgdata:
+  neo4jdata:
+  generated:
+  open-webui-data:

@@ -1,0 +1,38 @@
+neo4j:
+  name: "neo4j"
+  edition: "community"
+  acceptLicenseAgreement: "yes"
+
+  # Use Kubernetes secret synced from Key Vault
+  passwordFromSecret: neo4j-auth
+
+  config:
+    dbms.security.auth_enabled: "true"
+    dbms.default_listen_address: "0.0.0.0"
+    dbms.default_advertised_address: "74.162.106.229"
+    server.bolt.listen_address: ":7687"
+    server.http.listen_address: ":7474"
+
+services:
+  default:
+    enabled: true
+    type: LoadBalancer
+
+volumes:
+  data:
+    mode: "defaultStorageClass"
+    size: "20Gi"
+
+# Mount the CSI driver for SecretProviderClass
+extraVolumes:
+  - name: secrets-store
+    csi:
+      driver: secrets-store.csi.x-k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: neo4j-kv
+
+extraVolumeMounts:
+  - name: secrets-store
+    mountPath: "/mnt/secrets"
+    readOnly: true

@@ -1,0 +1,52 @@
+{
+  "shared": {
+    "primary":   "#2E4057",
+    "secondary": "#048A81",
+    "accent":    "#54C6EB",
+    "positive":  "#2DC653",
+    "negative":  "#E63946",
+    "neutral":   "#8D99AE",
+    "background":"#F8F9FA",
+    "chart": ["#2E4057", "#048A81", "#54C6EB", "#F4A261", "#E63946", "#2DC653"]
+  },
+  "hr": {
+    "primary":   "#2E5EAA",
+    "secondary": "#5BA4CF",
+    "accent":    "#F2A900",
+    "positive":  "#27AE60",
+    "negative":  "#E74C3C",
+    "neutral":   "#95A5A6",
+    "background":"#EBF5FB",
+    "chart": ["#2E5EAA", "#5BA4CF", "#F2A900", "#27AE60", "#E74C3C", "#95A5A6"]
+  },
+  "finance": {
+    "primary":   "#1F497D",
+    "secondary": "#2E75B6",
+    "accent":    "#ED7D31",
+    "positive":  "#70AD47",
+    "negative":  "#FF0000",
+    "neutral":   "#7F7F7F",
+    "background":"#EEF2F7",
+    "chart": ["#1F497D", "#2E75B6", "#ED7D31", "#70AD47", "#FF0000", "#A9D18E"]
+  },
+  "sales": {
+    "primary":   "#C00000",
+    "secondary": "#FF0000",
+    "accent":    "#FFC000",
+    "positive":  "#92D050",
+    "negative":  "#FF0000",
+    "neutral":   "#808080",
+    "background":"#FFF5F5",
+    "chart": ["#C00000", "#FF0000", "#FFC000", "#92D050", "#0070C0", "#7030A0"]
+  },
+  "marketing": {
+    "primary":   "#7030A0",
+    "secondary": "#C55A11",
+    "accent":    "#FF9900",
+    "positive":  "#00B050",
+    "negative":  "#FF0000",
+    "neutral":   "#A6A6A6",
+    "background":"#F9F0FF",
+    "chart": ["#7030A0", "#C55A11", "#FF9900", "#00B050", "#0070C0", "#FF0000"]
+  }
+}

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: better-rag-service
+  namespace: agent
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8000         
+      targetPort: 8000  
+      protocol: TCP
+  selector:
+    app: better-rag    # Must match your Deployment's labels

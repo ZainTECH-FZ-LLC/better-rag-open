@@ -1,0 +1,76 @@
+{
+  "department": "general",
+  "display_name": "General / Cross-Functional",
+  "colors": {
+    "primary": "#2C3E50",
+    "secondary": "#5D6D7E",
+    "accent": "#85929E",
+    "background": "#FFFFFF",
+    "surface": "#F8F9FA",
+    "text_primary": "#1A1A2E",
+    "text_secondary": "#4A5568",
+    "positive": "#27AE60",
+    "negative": "#E74C3C",
+    "neutral": "#7F8C8D",
+    "border": "#D5D8DC"
+  },
+  "typography": {
+    "font_family": "Calibri",
+    "heading_font": "Calibri",
+    "body_font": "Calibri",
+    "heading_sizes": {
+      "h1": 28,
+      "h2": 20,
+      "h3": 16,
+      "h4": 13
+    },
+    "body_size": 11,
+    "caption_size": 9
+  },
+  "pptx": {
+    "slide_width_emu": 9144000,
+    "slide_height_emu": 5143500,
+    "title_placeholder_top": 457200,
+    "title_placeholder_height": 685800,
+    "content_placeholder_top": 1143000,
+    "header_background": "#2C3E50",
+    "header_text_color": "#FFFFFF",
+    "slide_number_visible": true,
+    "logo_position": "bottom_right"
+  },
+  "docx": {
+    "page_size": "A4",
+    "margin_top_cm": 2.54,
+    "margin_bottom_cm": 2.54,
+    "margin_left_cm": 3.18,
+    "margin_right_cm": 3.18,
+    "header_text": "BetterRAG Enterprise",
+    "footer_text": "BetterRAG Enterprise",
+    "show_page_numbers": true
+  },
+  "xlsx": {
+    "header_fill": "#2C3E50",
+    "header_font_color": "#FFFFFF",
+    "header_font_bold": true,
+    "alternate_row_fill": "#F2F3F4",
+    "total_row_fill": "#D5D8DC",
+    "total_row_bold": true,
+    "border_color": "#AEB6BF",
+    "number_format_currency": "$#,##0.00",
+    "number_format_percent": "0.0%",
+    "number_format_integer": "#,##0"
+  },
+  "chart_palette": [
+    "#2C3E50",
+    "#5D6D7E",
+    "#85929E",
+    "#7F8C8D",
+    "#AAB7B8",
+    "#ECF0F1"
+  ],
+  "templates": {
+    "pptx": ["executive_summary"],
+    "docx": ["executive_memo", "technical_spec", "meeting_minutes"],
+    "xlsx": ["kpi_dashboard"]
+  }
+}

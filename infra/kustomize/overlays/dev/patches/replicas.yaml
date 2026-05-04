@@ -1,0 +1,4 @@
+# Dev: scale all workloads down to 1 replica to minimize cloud spend
+- op: replace
+  path: /spec/replicas
+  value: 1

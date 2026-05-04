@@ -1,0 +1,13 @@
+# Dev: halve resource limits on the API to reduce node cost
+- op: replace
+  path: /spec/template/spec/containers/0/resources/requests/cpu
+  value: "250m"
+- op: replace
+  path: /spec/template/spec/containers/0/resources/requests/memory
+  value: "512Mi"
+- op: replace
+  path: /spec/template/spec/containers/0/resources/limits/cpu
+  value: "1"
+- op: replace
+  path: /spec/template/spec/containers/0/resources/limits/memory
+  value: "2Gi"

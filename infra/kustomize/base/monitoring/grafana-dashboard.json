@@ -1,0 +1,258 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"}
+  ],
+  "annotations": {"list": []},
+  "description": "BetterRAG — Agentic RAG system performance dashboard",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "Query Performance",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"lineWidth": 2},
+          "unit": "s"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 1},
+      "id": 1,
+      "options": {"legend": {"calcs": ["mean", "p95", "max"], "displayMode": "table"}},
+      "targets": [
+        {
+          "datasource": {"type": "prometheus"},
+          "expr": "histogram_quantile(0.50, sum(rate(rag_query_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rag_query_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(rag_query_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ],
+      "title": "Query Latency (p50/p95/p99)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 1},
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum(rate(rag_query_total[5m])) by (department)",
+          "legendFormat": "{{department}}"
+        }
+      ],
+      "title": "Queries per Second by Department",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9},
+      "id": 101,
+      "title": "Retrieval Quality",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10},
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(rag_retrieval_sufficient_total[10m])) / sum(rate(rag_retrieval_total[10m]))",
+          "legendFormat": "Sufficient %"
+        }
+      ],
+      "title": "Retrieval Sufficiency Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 10},
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum(rate(rag_graph_expansion_total[10m])) / sum(rate(rag_retrieval_total[10m]))",
+          "legendFormat": "Graph Expansion %"
+        }
+      ],
+      "title": "Graph Expansion Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 10},
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(rag_hyde_used_total[10m])) / sum(rate(rag_retrieval_total[10m]))",
+          "legendFormat": "HyDE Usage %"
+        }
+      ],
+      "title": "HyDE Usage Rate",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18},
+      "id": 102,
+      "title": "LLM Cost Tracking",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 19},
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(rate(llm_tokens_total[5m])) by (model, token_type)",
+          "legendFormat": "{{model}} {{token_type}}"
+        }
+      ],
+      "title": "LLM Token Usage Rate by Model",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "currencyUSD"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 19},
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(increase(llm_cost_usd_total[1h])) by (model)",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "title": "Estimated LLM Cost ($/hr) by Model",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 27},
+      "id": 103,
+      "title": "Document Generation",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 28},
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum(rate(docgen_generated_total[5m])) by (doc_type)",
+          "legendFormat": "{{doc_type}}"
+        }
+      ],
+      "title": "Documents Generated per Second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "max": 1}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 28},
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum(rate(visual_qa_passed_total[10m])) / sum(rate(visual_qa_total[10m]))",
+          "legendFormat": "QA Pass Rate"
+        }
+      ],
+      "title": "Visual QA Pass Rate",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 36},
+      "id": 104,
+      "title": "Infrastructure",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 37},
+      "id": 10,
+      "targets": [
+        {
+          "expr": "sum(kube_deployment_status_replicas_available{namespace='better-rag'}) by (deployment)",
+          "legendFormat": "{{deployment}}"
+        }
+      ],
+      "title": "Available Pod Replicas",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 37},
+      "id": 11,
+      "targets": [
+        {
+          "expr": "sum(keda_scaler_active{namespace='better-rag'}) by (scaledObject)",
+          "legendFormat": "{{scaledObject}}"
+        }
+      ],
+      "title": "KEDA Active Scalers",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${datasource}"},
+      "fieldConfig": {"defaults": {"unit": "short"}},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 37},
+      "id": 12,
+      "targets": [
+        {
+          "expr": "sum(redis_connected_clients{namespace='better-rag'})",
+          "legendFormat": "Redis Clients"
+        }
+      ],
+      "title": "Redis Connected Clients",
+      "type": "stat"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["better-rag", "rag", "ai"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {"from": "now-3h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "BetterRAG — System Overview",
+  "uid": "better-rag-overview",
+  "version": 1
+}

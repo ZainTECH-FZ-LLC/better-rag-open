@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: query-worker
+  namespace: better-rag
+  labels:
+    app: better-rag
+    component: query-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: better-rag
+      component: query-worker
+  template:
+    metadata:
+      labels:
+        app: better-rag
+        component: query-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: better-rag-sa
+      nodeSelector:
+        workload: app
+      containers:
+        - name: worker
+          image: IMAGE_PLACEHOLDER
+          command:
+            - celery
+            - -A
+            - src.celery_app
+            - worker
+            - --queues=rag.query
+            - --concurrency=10
+            - --pool=gevent
+            - --loglevel=info
+            - --hostname=query@%h
+          envFrom:
+            - configMapRef:
+                name: better-rag-config
+            - secretRef:
+                name: better-rag-kv-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: better-rag-secrets
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: query-worker-scaler
+  namespace: better-rag
+spec:
+  scaleTargetRef:
+    name: query-worker
+  minReplicaCount: 3
+  maxReplicaCount: 8
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: redis
+      metadata:
+        address: "${REDIS_HOST}:6380"
+        listName: "rag.query"
+        listLength: "5"
+        enableTLS: "true"
+      authenticationRef:
+        name: redis-auth

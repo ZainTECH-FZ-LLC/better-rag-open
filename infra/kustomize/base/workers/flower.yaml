@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower
+  namespace: better-rag
+  labels:
+    app: better-rag
+    component: flower
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: better-rag
+      component: flower
+  template:
+    metadata:
+      labels:
+        app: better-rag
+        component: flower
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: better-rag-sa
+      nodeSelector:
+        workload: app
+      containers:
+        - name: flower
+          image: IMAGE_PLACEHOLDER
+          command:
+            - celery
+            - -A
+            - src.celery_app
+            - flower
+            - --port=5555
+            - --broker_api=
+            - --persistent=True
+            - --db=/tmp/flower.db
+          ports:
+            - containerPort: 5555
+              name: http
+          envFrom:
+            - configMapRef:
+                name: better-rag-config
+            - secretRef:
+                name: better-rag-kv-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5555
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: better-rag-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower
+  namespace: better-rag
+  labels:
+    app: better-rag
+    component: flower
+spec:
+  selector:
+    app: better-rag
+    component: flower
+  ports:
+    - port: 5555
+      targetPort: 5555
+      name: http

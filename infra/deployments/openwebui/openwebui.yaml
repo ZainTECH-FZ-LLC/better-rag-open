@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwebui
+  namespace: openwebui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      nodeSelector:
+        agentpool: apppool
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "app"
+          effect: "NoSchedule"
+      containers:
+        - name: open-webui
+          image: ghcr.io/open-webui/open-webui:main
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"  # Increase to 4Gi if doing heavy Document RAG
+          env:
+            # --- SECURITY ---
+            - name: WEBUI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openwebui-kv-sync
+                  key: webui-secret-key
+                  
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openwebui-kv-sync
+                  key: openai-api-key
+            
+            - name: OPENAI_API_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: openwebui-kv-sync
+                  key: openai-api-base-url
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: openwebui-kv-sync
+                  key: openwebui-database-url
+            - name: WEBUI_NAME
+              value: "BetterRAG"
+            - name: WEBUI_URL
+              value: "https://${DOMAIN_NAME}"
+            - name: ENABLE_SIGNUP
+              value: "true"
+            - name: DEFAULT_MODELS
+              value: ""
+            # Disable built-in model management — BetterRAG handles routing
+            - name: ENABLE_MODEL_FILTER
+              value: "true"
+            - name: MODEL_FILTER_LIST
+              value: "better-rag"
+            # SSE streaming support
+            - name: ENABLE_STREAMING
+              value: "true" 
+            - name: WEBUI_AUTH
+              value: "True"
+            
+            # --- STORAGE ---
+            - name: DATA_DIR
+              value: "/app/backend/data"
+
+          # Critical for HDDs: Give the app time to initialize SQLite and migrations
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10 # Total of 5 minutes to start up
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+
+          volumeMounts:
+            - name: webui-data
+              mountPath: /app/backend/data
+            - name: secrets-store
+              mountPath: "/mnt/secrets"
+              readOnly: true
+      volumes:
+        - name: webui-data
+          persistentVolumeClaim:
+            claimName: open-webui-pvc
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "openwebui-kv"

@@ -1,0 +1,71 @@
+# ServiceAccount with Azure Workload Identity annotation
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: better-rag-sa
+  namespace: better-rag
+  annotations:
+    azure.workload.identity/client-id: "${WORKLOAD_IDENTITY_CLIENT_ID}"
+  labels:
+    azure.workload.identity/use: "true"
+---
+# SecretProviderClass — pulls secrets from Azure Key Vault into Kubernetes Secrets
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: better-rag-secrets
+  namespace: better-rag
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "false"
+    clientID: "${WORKLOAD_IDENTITY_CLIENT_ID}"
+    keyvaultName: "kv-${CLUSTER_NAME}"
+    tenantId: "${AZURE_TENANT_ID}"
+    objects: |
+      array:
+        - |
+          objectName: graph-client-secret
+          objectType: secret
+        - |
+          objectName: anthropic-api-key
+          objectType: secret
+        - |
+          objectName: azure-openai-api-key
+          objectType: secret
+        - |
+          objectName: azure-openai-endpoint
+          objectType: secret
+        - |
+          objectName: postgres-admin-password
+          objectType: secret
+        - |
+          objectName: ocr-azure-key
+          objectType: secret
+        - |
+          objectName: ocr-azure-endpoint
+          objectType: secret
+        - |
+          objectName: neo4j-password
+          objectType: secret
+  secretObjects:
+    - secretName: better-rag-kv-secrets
+      type: Opaque
+      data:
+        - objectName: graph-client-secret
+          key: GRAPH_CLIENT_SECRET
+        - objectName: anthropic-api-key
+          key: ANTHROPIC_API_KEY
+        - objectName: azure-openai-api-key
+          key: AZURE_OPENAI_API_KEY
+        - objectName: azure-openai-endpoint
+          key: AZURE_OPENAI_ENDPOINT
+        - objectName: postgres-admin-password
+          key: PGVECTOR_PASSWORD
+        - objectName: ocr-azure-key
+          key: OCR_AZURE_KEY
+        - objectName: ocr-azure-endpoint
+          key: OCR_AZURE_ENDPOINT
+        - objectName: neo4j-password
+          key: NEO4J_PASSWORD

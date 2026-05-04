@@ -1,0 +1,72 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: better-rag
+
+resources:
+  - ../../base
+
+patches:
+  # Scale all Deployments to 1 replica
+  - path: patches/replicas.yaml
+    target:
+      kind: Deployment
+      name: api
+  - path: patches/replicas.yaml
+    target:
+      kind: Deployment
+      name: query-worker
+  - path: patches/replicas.yaml
+    target:
+      kind: Deployment
+      name: docgen-worker
+  - path: patches/replicas.yaml
+    target:
+      kind: Deployment
+      name: ingestion-worker
+
+  # Reduce API resource limits
+  - path: patches/resources.yaml
+    target:
+      kind: Deployment
+      name: api
+
+  # Cap KEDA scalers
+  - path: patches/keda-dev.yaml
+    target:
+      kind: ScaledObject
+      name: query-worker-scaler
+  - path: patches/keda-dev.yaml
+    target:
+      kind: ScaledObject
+      name: docgen-worker-scaler
+  - path: patches/keda-dev.yaml
+    target:
+      kind: ScaledObject
+      name: ingestion-worker-scaler
+
+  # Disable HPA in dev
+  - path: patches/hpa-dev.yaml
+    target:
+      kind: HorizontalPodAutoscaler
+      name: api-hpa
+
+  # Enable debug logging
+  - target:
+      kind: ConfigMap
+      name: better-rag-config
+    patch: |
+      - op: replace
+        path: /data/DEBUG
+        value: "true"
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: "DEBUG"
+
+images:
+  - name: IMAGE_PLACEHOLDER
+    newName: betterragacr.azurecr.io/better-rag-api
+    newTag: dev
+  - name: DOCGEN_IMAGE_PLACEHOLDER
+    newName: betterragacr.azurecr.io/better-rag-docgen
+    newTag: dev

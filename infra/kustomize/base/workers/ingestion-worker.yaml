@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion-worker
+  namespace: better-rag
+  labels:
+    app: better-rag
+    component: ingestion-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: better-rag
+      component: ingestion-worker
+  template:
+    metadata:
+      labels:
+        app: better-rag
+        component: ingestion-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: better-rag-sa
+      nodeSelector:
+        workload: heavy
+      tolerations:
+        - key: workload
+          value: heavy
+          effect: NoSchedule
+      containers:
+        - name: worker
+          image: DOCGEN_IMAGE_PLACEHOLDER
+          command:
+            - celery
+            - -A
+            - src.celery_app
+            - worker
+            - --queues=rag.ingestion
+            - --concurrency=4
+            - --pool=prefork
+            - --loglevel=info
+            - --hostname=ingestion@%h
+          envFrom:
+            - configMapRef:
+                name: better-rag-config
+            - secretRef:
+                name: better-rag-kv-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: better-rag-secrets
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: ingestion-worker-scaler
+  namespace: better-rag
+spec:
+  scaleTargetRef:
+    name: ingestion-worker
+  minReplicaCount: 1
+  maxReplicaCount: 3
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+    - type: redis
+      metadata:
+        address: "${REDIS_HOST}:6380"
+        listName: "rag.ingestion"
+        listLength: "10"
+        enableTLS: "true"
+      authenticationRef:
+        name: redis-auth

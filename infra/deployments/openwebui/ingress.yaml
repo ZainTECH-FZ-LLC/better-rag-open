@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress
+  namespace: openwebui # Ensure this is the same namespace as your openwebui-service
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    #acme.cert-manager.io/http01-edit-in-place: "true"
+    #nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "128m"
+spec:
+  # This MUST match the ingress controller you installed via Terraform
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - better-rag.uaenorth.cloudapp.azure.com
+    secretName: letsencrypt-tls
+  rules:
+  - host: better-rag.uaenorth.cloudapp.azure.com
+    http: 
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: open-webui-service
+            port:
+              number: 80
+

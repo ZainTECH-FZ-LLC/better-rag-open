@@ -1,0 +1,48 @@
+# Dockerfile.docgen — Doc-gen worker / ingestion worker
+# Includes Node.js, LibreOffice, and Poppler for document generation + OCR support
+
+FROM python:3.12-slim AS base
+
+# Install system dependencies (LibreOffice, Poppler, Node.js)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    libreoffice-writer \
+    libreoffice-calc \
+    libreoffice-impress \
+    poppler-utils \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pptxgenjs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install uv for fast dependency management
+RUN pip install --no-cache-dir uv
+
+# Copy dependency files + source for install
+COPY pyproject.toml ./
+COPY config/ config/
+COPY src/ src/
+COPY alembic/ alembic/
+COPY alembic.ini ./
+
+# Install dependencies
+RUN uv pip install --system --no-cache ".[dev]"
+
+# Download spaCy model
+RUN python -m spacy download en_core_web_sm
+
+# Create directories
+RUN mkdir -p generated
+
+# Copy startup script
+COPY scripts/start-workers.sh /app/start-workers.sh
+RUN chmod +x /app/start-workers.sh
+
+EXPOSE 5555
+
+# Default: run all workers (ingestion + beat + flower)
+CMD ["/app/start-workers.sh"]

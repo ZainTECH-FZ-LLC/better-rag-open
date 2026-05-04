@@ -1,0 +1,33 @@
+# Allow workers and API to reach PostgreSQL, Neo4j, and external Azure services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-workers-to-stores
+  namespace: better-rag
+spec:
+  podSelector:
+    matchLabels:
+      app: better-rag
+  policyTypes:
+    - Egress
+  egress:
+    # PostgreSQL (pgvector)
+    - ports:
+        - port: 5432
+          protocol: TCP
+    # Neo4j Bolt
+    - ports:
+        - port: 7687
+          protocol: TCP
+    # Neo4j HTTP (internal)
+    - ports:
+        - port: 7474
+          protocol: TCP
+    # Azure OpenAI / external HTTPS APIs
+    - ports:
+        - port: 443
+          protocol: TCP
+    # Azure Document Intelligence / Microsoft Graph
+    - ports:
+        - port: 443
+          protocol: TCP

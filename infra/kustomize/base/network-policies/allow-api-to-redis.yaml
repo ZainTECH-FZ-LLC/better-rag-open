@@ -1,0 +1,18 @@
+# Allow API and workers to reach Azure Cache for Redis (port 6380 TLS)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-to-redis
+  namespace: better-rag
+spec:
+  podSelector:
+    matchLabels:
+      app: better-rag
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - port: 6380
+          protocol: TCP
+        - port: 6379
+          protocol: TCP

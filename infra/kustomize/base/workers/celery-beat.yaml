@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: better-rag
+  labels:
+    app: better-rag
+    component: celery-beat
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Only ever one beat scheduler
+  selector:
+    matchLabels:
+      app: better-rag
+      component: celery-beat
+  template:
+    metadata:
+      labels:
+        app: better-rag
+        component: celery-beat
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: better-rag-sa
+      nodeSelector:
+        workload: app
+      containers:
+        - name: beat
+          image: IMAGE_PLACEHOLDER
+          command:
+            - celery
+            - -A
+            - src.celery_app
+            - beat
+            - --loglevel=info
+          envFrom:
+            - configMapRef:
+                name: better-rag-config
+            - secretRef:
+                name: better-rag-kv-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: better-rag-secrets
+---
+# Shared KEDA TriggerAuthentication for all Redis-backed scalers
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: redis-auth
+  namespace: better-rag
+spec:
+  secretTargetRef:
+    - parameter: password
+      name: better-rag-kv-secrets
+      key: REDIS_PASSWORD

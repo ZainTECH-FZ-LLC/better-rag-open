@@ -1,0 +1,70 @@
+# Helm values override for Open WebUI
+# Used with: helm install open-webui open-webui/open-webui --values values.yaml
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/open-webui/open-webui
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false  # Managed by infra/kustomize/base/ingress/ingress.yaml
+
+persistence:
+  enabled: true
+  storageClass: "managed-premium"
+  size: 10Gi
+
+nodeSelector:
+  workload: app
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+env:
+  - name: WEBUI_NAME
+    value: "BetterRAG"
+  - name: WEBUI_URL
+    value: "https://${DOMAIN_NAME}"
+  - name: ENABLE_SIGNUP
+    value: "false"
+  - name: DEFAULT_MODELS
+    value: ""
+  # Point Open WebUI at the BetterRAG OpenAI-compatible endpoint
+  - name: OPENAI_API_BASE_URL
+    value: "http://api:8000/api/v1/openai"
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: better-rag-kv-secrets
+        key: OPENAI_COMPAT_KEY
+  - name: WEBUI_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: better-rag-kv-secrets
+        key: WEBUI_SECRET_KEY
+  # Disable built-in model management — BetterRAG handles routing
+  - name: ENABLE_MODEL_FILTER
+    value: "true"
+  - name: MODEL_FILTER_LIST
+    value: "better-rag"
+  # SSE streaming support
+  - name: ENABLE_STREAMING
+    value: "true"
+
+podLabels:
+  azure.workload.identity/use: "true"
+
+serviceAccount:
+  create: false
+  name: better-rag-sa

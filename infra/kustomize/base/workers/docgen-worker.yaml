@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docgen-worker
+  namespace: better-rag
+  labels:
+    app: better-rag
+    component: docgen-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: better-rag
+      component: docgen-worker
+  template:
+    metadata:
+      labels:
+        app: better-rag
+        component: docgen-worker
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: better-rag-sa
+      nodeSelector:
+        workload: heavy
+      tolerations:
+        - key: workload
+          value: heavy
+          effect: NoSchedule
+      containers:
+        - name: worker
+          image: DOCGEN_IMAGE_PLACEHOLDER
+          command:
+            - celery
+            - -A
+            - src.celery_app
+            - worker
+            - --queues=rag.doc_gen
+            - --concurrency=2
+            - --pool=prefork
+            - --loglevel=info
+            - --hostname=docgen@%h
+          envFrom:
+            - configMapRef:
+                name: better-rag-config
+            - secretRef:
+                name: better-rag-kv-secrets
+          resources:
+            requests:
+              cpu: "1"
+              memory: "4Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+            - name: generated
+              mountPath: /app/generated
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: better-rag-secrets
+        - name: generated
+          emptyDir: {}
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: docgen-worker-scaler
+  namespace: better-rag
+spec:
+  scaleTargetRef:
+    name: docgen-worker
+  minReplicaCount: 2
+  maxReplicaCount: 6
+  pollingInterval: 15
+  cooldownPeriod: 120
+  triggers:
+    - type: redis
+      metadata:
+        address: "${REDIS_HOST}:6380"
+        listName: "rag.doc_gen"
+        listLength: "2"
+        enableTLS: "true"
+      authenticationRef:
+        name: redis-auth

@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: better-rag
+
+resources:
+  # Namespace + workload identity (ServiceAccount + SecretProviderClass)
+  - namespace.yaml
+  - workload-identity.yaml
+  - configmap.yaml
+
+  # API server
+  - api/deployment.yaml
+  - api/service.yaml
+  - api/hpa.yaml
+
+  # Celery workers (each file includes Deployment + KEDA ScaledObject)
+  - workers/query-worker.yaml
+  - workers/docgen-worker.yaml
+  - workers/ingestion-worker.yaml
+  - workers/celery-beat.yaml
+  - workers/flower.yaml
+
+  # Open WebUI Pipe Function ConfigMap
+  - open-webui/pipe-function-cm.yaml
+
+  # Ingress + TLS certificate
+  - ingress/ingress.yaml
+  - ingress/cluster-issuer.yaml
+
+  # Network policies (5 granular policies)
+  - network-policies/default-deny.yaml
+  - network-policies/allow-api-to-redis.yaml
+  - network-policies/allow-workers-to-stores.yaml
+  - network-policies/allow-owui-to-api.yaml
+  - network-policies/allow-ingress.yaml
+
+  # Alerting rules
+  - monitoring/alerting-rules.yaml
+
+commonLabels:
+  app: better-rag

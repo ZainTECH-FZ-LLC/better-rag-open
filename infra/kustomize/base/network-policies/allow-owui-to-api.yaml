@@ -1,0 +1,50 @@
+# Allow Open WebUI to reach the BetterRAG API
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-owui-to-api
+  namespace: better-rag
+spec:
+  podSelector:
+    matchLabels:
+      app: better-rag
+      component: api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: open-webui
+      ports:
+        - port: 8000
+          protocol: TCP
+---
+# Allow Open WebUI pods egress to the API
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-owui-egress-to-api
+  namespace: better-rag
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: open-webui
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              component: api
+      ports:
+        - port: 8000
+          protocol: TCP
+    # Allow HTTPS for asset loading
+    - ports:
+        - port: 443
+          protocol: TCP
+    # Allow DNS
+    - ports:
+        - port: 53
+          protocol: UDP

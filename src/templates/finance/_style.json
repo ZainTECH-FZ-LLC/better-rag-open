@@ -1,0 +1,76 @@
+{
+  "department": "finance",
+  "display_name": "Finance",
+  "colors": {
+    "primary": "#1E4D8C",
+    "secondary": "#A8C4E0",
+    "accent": "#4A90D9",
+    "background": "#FFFFFF",
+    "surface": "#F5F8FC",
+    "text_primary": "#1A1A2E",
+    "text_secondary": "#4A5568",
+    "positive": "#27AE60",
+    "negative": "#E74C3C",
+    "neutral": "#7F8C8D",
+    "border": "#D1E0F0"
+  },
+  "typography": {
+    "font_family": "Calibri",
+    "heading_font": "Calibri",
+    "body_font": "Calibri",
+    "heading_sizes": {
+      "h1": 28,
+      "h2": 20,
+      "h3": 16,
+      "h4": 13
+    },
+    "body_size": 11,
+    "caption_size": 9
+  },
+  "pptx": {
+    "slide_width_emu": 9144000,
+    "slide_height_emu": 5143500,
+    "title_placeholder_top": 457200,
+    "title_placeholder_height": 685800,
+    "content_placeholder_top": 1143000,
+    "header_background": "#1E4D8C",
+    "header_text_color": "#FFFFFF",
+    "slide_number_visible": true,
+    "logo_position": "bottom_right"
+  },
+  "docx": {
+    "page_size": "A4",
+    "margin_top_cm": 2.54,
+    "margin_bottom_cm": 2.54,
+    "margin_left_cm": 3.18,
+    "margin_right_cm": 3.18,
+    "header_text": "CONFIDENTIAL — Finance Department",
+    "footer_text": "BetterRAG Enterprise | Finance",
+    "show_page_numbers": true
+  },
+  "xlsx": {
+    "header_fill": "#1E4D8C",
+    "header_font_color": "#FFFFFF",
+    "header_font_bold": true,
+    "alternate_row_fill": "#EBF3FB",
+    "total_row_fill": "#D1E0F0",
+    "total_row_bold": true,
+    "border_color": "#A8C4E0",
+    "number_format_currency": "$#,##0.00",
+    "number_format_percent": "0.0%",
+    "number_format_integer": "#,##0"
+  },
+  "chart_palette": [
+    "#1E4D8C",
+    "#A8C4E0",
+    "#4A90D9",
+    "#2C5F8A",
+    "#7BB3D6",
+    "#E8F0F7"
+  ],
+  "templates": {
+    "pptx": ["quarterly_review", "executive_summary", "financial_model"],
+    "docx": ["financial_report", "executive_memo", "audit_report"],
+    "xlsx": ["budget_template", "financial_model", "kpi_dashboard"]
+  }
+}

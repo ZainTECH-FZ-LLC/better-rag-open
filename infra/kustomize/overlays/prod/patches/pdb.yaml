@@ -1,0 +1,23 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-pdb
+  namespace: better-rag
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: better-rag
+      component: api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: query-worker-pdb
+  namespace: better-rag
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: better-rag
+      component: query-worker

@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress
+  namespace: openwebui # Ensure this is the same namespace as your openwebui-service
+  annotations:
+    # Forces HTTP to HTTPS redirection
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Optional: Increases max upload size (useful for uploading models/files to WebUI)
+    nginx.ingress.kubernetes.io/proxy-body-size: "128m"
+spec:
+  # This MUST match the ingress controller you installed via Terraform
+  ingressClassName: nginx 
+  tls:
+  - hosts:
+    - 20.233.214.213 # The IP you used in your openssl /CN
+    secretName: ip-selfsigned-tls # The name of the secret you created manually
+  rules:
+  - host: 20.233.214.213
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: openweb-ui-service
+            port:
+              number: 80
+

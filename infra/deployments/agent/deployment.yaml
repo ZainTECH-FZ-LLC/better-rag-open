@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: better-rag
+  namespace: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: better-rag
+  template:
+    metadata:
+      labels:
+        app: better-rag
+    spec:
+      nodeSelector:
+        agentpool: apppool
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "app"
+          effect: "NoSchedule"
+      containers:
+        - name: better-rag
+          image: acrzaingpt.azurecr.io/better-rag:v1 
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"  # Increase to 4Gi if doing heavy Document RAG
+          envFrom:
+            - secretRef:
+                name: agent-kv-sync
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            failureThreshold: 30
+            periodSeconds: 10 # Total of 5 minutes to start up
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 20
+
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets"
+              readOnly: true
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "agent-kv"

@@ -1,0 +1,77 @@
+# Helm values override for Neo4j Community Edition
+# Used with: helm install neo4j neo4j/neo4j --values values.yaml
+
+neo4j:
+  name: "better-rag-neo4j"
+  edition: "community"
+  minimumClusterSize: 1
+  # Password loaded from Kubernetes secret via extraEnvFrom
+  password: ""
+
+volumes:
+  data:
+    mode: "volume"
+    volume:
+      storageClassName: "managed-premium"
+      accessModes:
+        - ReadWriteOnce
+      requests:
+        storage: 100Gi
+
+nodeSelector:
+  workload: data
+
+tolerations:
+  - key: "workload"
+    operator: "Equal"
+    value: "data"
+    effect: "NoSchedule"
+
+resources:
+  requests:
+    cpu: 1000m
+    memory: 4Gi
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+
+config:
+  server.memory.heap.initial_size: "2G"
+  server.memory.heap.max_size: "4G"
+  server.memory.pagecache.size: "2G"
+  dbms.security.auth_enabled: "true"
+  server.bolt.listen_address: "0.0.0.0:7687"
+  server.http.listen_address: "0.0.0.0:7474"
+  # Enable APOC plugin for graph algorithms
+  dbms.security.procedures.unrestricted: "apoc.*"
+  dbms.security.procedures.allowlist: "apoc.*"
+
+plugins:
+  - "apoc"
+
+services:
+  neo4j:
+    enabled: true
+    spec:
+      type: ClusterIP
+  admin:
+    enabled: false  # Disable external admin port
+
+# Load password from Secret
+extraEnvFrom:
+  - secretRef:
+      name: neo4j-credentials
+
+jvmAdditionalSettings:
+  - "-XX:+UseG1GC"
+  - "-XX:+DisableExplicitGC"
+  - "-XX:MaxGCPauseMillis=200"
+
+# Liveness / readiness
+livenessProbe:
+  failureThreshold: 40
+  periodSeconds: 15
+
+readinessProbe:
+  failureThreshold: 40
+  periodSeconds: 15

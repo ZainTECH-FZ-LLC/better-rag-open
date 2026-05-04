@@ -1,0 +1,7 @@
+# Dev: disable HPA scaling — keep at 1 replica
+- op: replace
+  path: /spec/minReplicas
+  value: 1
+- op: replace
+  path: /spec/maxReplicas
+  value: 1

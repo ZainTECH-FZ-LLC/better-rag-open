@@ -1,0 +1,59 @@
+---
+# Let's Encrypt production ClusterIssuer — DNS-01 challenge via Azure DNS
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ops@contoso.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          azureDNS:
+            subscriptionID: "${AZURE_SUBSCRIPTION_ID}"
+            resourceGroupName: "${DNS_ZONE_RESOURCE_GROUP}"
+            hostedZoneName: "${DNS_ZONE_NAME}"
+            environment: AzurePublicCloud
+            managedIdentity:
+              clientID: "${WORKLOAD_IDENTITY_CLIENT_ID}"
+---
+# Let's Encrypt staging — use for testing to avoid rate limits
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: ops@contoso.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          azureDNS:
+            subscriptionID: "${AZURE_SUBSCRIPTION_ID}"
+            resourceGroupName: "${DNS_ZONE_RESOURCE_GROUP}"
+            hostedZoneName: "${DNS_ZONE_NAME}"
+            environment: AzurePublicCloud
+            managedIdentity:
+              clientID: "${WORKLOAD_IDENTITY_CLIENT_ID}"
+---
+# Wildcard TLS certificate for the application domain
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: better-rag-tls
+  namespace: better-rag
+spec:
+  secretName: better-rag-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "${DOMAIN_NAME}"
+    - "*.${DOMAIN_NAME}"
+  duration: 2160h    # 90 days
+  renewBefore: 360h  # Renew 15 days before expiry

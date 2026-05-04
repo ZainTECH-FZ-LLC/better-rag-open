@@ -1,0 +1,37 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: cert-manager
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: cert-manager
+      version: "v1.15.*"
+      sourceRef:
+        kind: HelmRepository
+        name: cert-manager
+        namespace: flux-system
+  values:
+    installCRDs: true
+    replicaCount: 2
+    nodeSelector:
+      workload: app
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    webhook:
+      replicaCount: 2
+    cainjector:
+      replicaCount: 1
+    # Workload identity for DNS01 solver
+    serviceAccount:
+      annotations:
+        azure.workload.identity/client-id: "${WORKLOAD_IDENTITY_CLIENT_ID}"
+    podLabels:
+      azure.workload.identity/use: "true"

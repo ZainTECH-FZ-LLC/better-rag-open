@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docgen
+  namespace: docgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docgen
+  template:
+    metadata:
+      labels:
+        app: docgen
+    spec:
+      nodeSelector:
+        agentpool: heavypool
+      tolerations:
+        - key: "workload"
+          operator: "Equal"
+          value: "heavy"
+          effect: "NoSchedule"
+      containers:
+        - name: docgen
+          image: acrzaingpt.azurecr.io/better-rag:v1 
+          ports:
+            - containerPort: 5555
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "4Gi"
+            limits:
+              cpu: "1000m"
+              memory: "4Gi"  # Increase to 4Gi if doing heavy Document RAG
+          envFrom:
+            - secretRef:
+                name: docgen-kv-sync
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5555
+            failureThreshold: 30
+            periodSeconds: 10 # Total of 5 minutes to start up
+          
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 5555
+            initialDelaySeconds: 60
+            periodSeconds: 20
+
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets"
+              readOnly: true
+      volumes:
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "docgen-kv"

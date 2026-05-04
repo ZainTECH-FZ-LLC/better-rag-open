@@ -1,0 +1,12 @@
+# Prod: add pod anti-affinity to spread API replicas across nodes
+- op: add
+  path: /spec/template/spec/affinity
+  value:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                component: api
+            topologyKey: kubernetes.io/hostname
